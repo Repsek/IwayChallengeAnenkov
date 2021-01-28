@@ -31,7 +31,7 @@ public class ChitaiGorodTests {
     public void tearDown() {driver.quit();}
 
 
-    @RepeatedTest(10)
+    @RepeatedTest(3)
     public void mainPage_booksSearchedThenAddedToBasketThenOneDeleted_booksAddedAndRemovedProperly() throws InterruptedException {
         String mainPageAddress = "https://www.chitai-gorod.ru/";
         int booksToTest = 3;
@@ -47,19 +47,20 @@ public class ChitaiGorodTests {
         By basketPriceLocator = By.className("basket-item__price-total_discount");
         By basketTotalPrice = By.className("js__total_sum");
         By deleteButtonLocator = By.className("basket-item__control_delete");
+        By basketBooksNotDeleted = By.cssSelector(".basket-item:not([data-deleted])");
 
 
         driver.manage().window().maximize();
         driver.navigate().to(mainPageAddress);
         driver.findElement(searchFieldLocator).sendKeys("тестирование");
         driver.findElement(searchButtonLocator).click();
-
-//        Чтобы не создавать множество массивов, сделал отдельный метод, который из списка вебэлементов берёт текст и сохраняет в массив строк
         var allBuyButtons = driver.findElements(buyButtonLocator);
+
+//        Чтобы не создавать множество списков, сделал отдельный метод, который из списка вебэлементов берёт текст и сохраняет в массив строк
         List<String> bookTitles = getLocatorsTexts(bookTitleLocator);
         List<String> authorNames = getLocatorsTexts(bookAuthorLocator);
 
-//        В дальнейшем нам придётся сравнивать суммы, а все цены на странице результатов поиска идут со знаком ₽, поэтому отдельный метод, записывающий цены в числовой список.
+//        В дальнейшем нам придётся сравнивать суммы, а все цены на странице результатов поиска идут со знаком ₽, поэтому отдельный метод, записывающий цены в числовой список
         List<Integer> bookPrices = getLocatorsNumbers(bookPriceLocator);
 
 //        В результатах поиска вместо кнопки "Купить" у некоторых книг бывает кнопка "Где купить?", при нажатии которой происходит переход на страницу с картой. Цикл ниже удаляет из массивов элементы, у которых кнопка не "Купить"
@@ -86,7 +87,7 @@ public class ChitaiGorodTests {
             authorsToTest.add(authorNames.get(currentNumber));
             pricesToTest.add(bookPrices.get(currentNumber));
             allBuyButtons.get(currentNumber).click();
-            Thread.sleep(1000);
+            Thread.sleep(4000);
         }
 
         driver.findElement(basketLocator).click();
@@ -110,9 +111,11 @@ public class ChitaiGorodTests {
         expectedSum = expectedSum - basketPrices.get(randomNumber);
 
 //        Без sleep сумма заказа не успевает измениться и тест всегда валится из-за не соответствия ожидаемой и фактической суммы заказа
-        Thread.sleep(2000);
+        Thread.sleep(3000);
         actualSum = Integer.parseInt(driver.findElement(basketTotalPrice).getText());
+        var notDeletedBooks = driver.findElements(basketBooksNotDeleted);
 
+        Assertions.assertTrue(notDeletedBooks.size() == (booksToTest - 1), "Количество книг после удаления одной не соответствует ожидаемому");
         Assertions.assertEquals(expectedSum, actualSum, "Общая стоимость заказа после удаления одной книги не совпадает с ожидаемой суммой");
     }
 
